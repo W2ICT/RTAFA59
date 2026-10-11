@@ -1,0 +1,512 @@
+<!doctype html>
+<!--
+  ระบบบริหารข้อมูล ชนอ.59 — ไฟล์เดียว (index.html) ต่อ Firebase (Auth + Firestore)
+  ตั้งค่า: แก้ firebaseConfig / SHARED_EMAIL ในสคริปต์ด้านล่าง แล้ววาง Firestore rules นี้ใน Firebase Console > Firestore > Rules:
+
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      function signedIn() { return request.auth != null && request.auth.token.email == 'class59@chanor59.app'; }
+      match /contacts/{id} {
+        allow read, delete: if signedIn();
+        allow create, update: if signedIn() && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200;
+      }
+      match /docs/{id} {
+        allow read, delete: if signedIn();
+        allow create, update: if signedIn() && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() < 400;
+      }
+    }
+  }
+
+  ทดลองโดยไม่ต่อ Firebase: เปิด index.html?demo=1 (รหัส 5259 ข้อมูลอยู่ในหน่วยความจำ)
+-->
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>ระบบบริหารข้อมูล ชนอ.59</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--card:#fff;--ink:#111;--muted:#8a8f8c;--line:#eee;--brand:#111;--brand-ink:#fff;--accent:#111;--danger:#c0392b;--ok:#111;--chip:#f3f3f2;--shadow:none}
+@media (prefers-color-scheme:dark){:root{--bg:#0f0f0f;--card:#0f0f0f;--ink:#eee;--muted:#8a8f8c;--line:#222;--brand:#eee;--brand-ink:#111;--accent:#eee;--ok:#eee;--chip:#1c1c1c}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font-family:Sarabun,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4}
+#app{max-width:640px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(14px + env(safe-area-inset-top)) 20px 8px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-size:24px;margin:0;font-weight:600;letter-spacing:-.3px}
+h1 small{display:block;font-size:13px;font-weight:400;color:var(--muted);letter-spacing:0}
+.search{margin-top:10px}
+.search input{width:100%;border:0;border-radius:10px;padding:10px 14px;font:inherit;background:var(--chip);color:var(--ink);outline:0}
+main{flex:1;padding:4px 20px calc(110px + env(safe-area-inset-bottom))}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav .in{max-width:640px;margin:0 auto;display:flex}
+nav button{flex:1;border:0;background:none;color:var(--muted);padding:9px 4px 7px;font:inherit;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;position:relative}
+nav button svg{width:22px;height:22px}
+nav button.on{color:var(--ink);font-weight:600}
+nav button .dot{position:absolute;top:5px;left:calc(50% + 6px);background:var(--ink);color:var(--bg);border-radius:8px;font-size:10px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px}
+.acts{display:flex;align-items:center;gap:4px}.addb{border:0;background:var(--ink);color:var(--bg);font:inherit;font-size:14px;font-weight:500;padding:7px 14px;border-radius:18px;cursor:pointer}
+.ib{border:0;background:none;color:var(--ink);width:38px;height:38px;border-radius:10px;font-size:22px;cursor:pointer}
+.card{border-bottom:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:14px;padding:12px 0;cursor:pointer}
+.av{flex:none;width:38px;height:38px;border-radius:50%;background:var(--chip);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:500;font-size:15px}
+.grow{flex:1;min-width:0}
+.t{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.call{flex:none;width:36px;height:36px;border-radius:50%;color:var(--ink);display:flex;align-items:center;justify-content:center;text-decoration:none}
+.call svg{width:18px;height:18px}
+.letter{font-size:12px;font-weight:500;color:var(--muted);margin:18px 0 2px;letter-spacing:.5px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 20px 10px;margin:0 -20px}
+.chip{flex:none;border:0;background:var(--chip);color:var(--muted);padding:6px 14px;border-radius:16px;font:inherit;font-size:14px;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--bg)}
+.seg{display:flex;gap:18px;margin:6px 0 4px}
+.seg button{border:0;background:none;padding:6px 0;font:inherit;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+.seg button.on{color:var(--ink);border-color:var(--ink);font-weight:500}
+.empty{text-align:center;color:var(--muted);padding:60px 16px}
+.badge{flex:none;font-size:13px;color:var(--muted)}
+.badge.today{background:var(--ink);color:var(--bg);border-radius:10px;padding:2px 10px}
+.badge.soon{color:var(--ink);font-weight:600}
+.hero{background:var(--chip);border-radius:12px;padding:14px 16px;margin:10px 0 4px}
+.hero b{font-weight:600}
+.gate{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}.gate[hidden]{display:none}.gate-in{width:100%;max-width:340px}.gate-in h1{margin:0 0 24px}
+.pw{position:relative}.pw input{padding-right:64px}.pw button{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);font:inherit;font-size:14px;padding:8px 10px;cursor:pointer}
+.unitsel{width:100%;margin:2px 0 6px;font-size:14px;color:var(--ink)}
+.sort{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--muted);padding:2px 0 6px}.sort button{border:0;background:none;font:inherit;color:var(--muted);cursor:pointer;padding:2px 0}.sort button.on{color:var(--ink);font-weight:600}.edit{flex:none;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;padding:6px}
+.doc-ic{flex:none;width:38px;height:38px;border-radius:8px;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--muted)}
+.tag{display:inline-block;background:var(--chip);border-radius:4px;padding:0 6px;font-size:11px;margin-right:6px}
+.ov{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));animation:up .18s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.5}}
+.sheet h2{margin:0 0 10px;font-size:20px;font-weight:600}
+label{display:block;font-size:12px;color:var(--muted);margin:12px 0 3px}
+input,select,textarea{width:100%;font:inherit;padding:10px 12px;border:0;border-radius:10px;background:var(--chip);color:var(--ink);outline:0}
+textarea{min-height:70px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btns{display:flex;gap:8px;margin-top:18px}
+.btn{flex:1;border:0;border-radius:10px;padding:12px;font:inherit;font-weight:500;cursor:pointer;background:var(--chip);color:var(--ink);text-align:center;text-decoration:none;display:block}
+.btn.p{background:var(--ink);color:var(--bg)}
+.btn.d{background:none;color:var(--danger)}
+.kv{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.kv span:first-child{flex:none;width:90px;color:var(--muted);font-size:14px}
+.kv a{color:inherit}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:20px;z-index:30;font-size:14px}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="top">
+      <h1 id="title"></h1>
+      <div class="acts"><button class="addb" id="addBtn">+ เพิ่ม</button><button class="ib" id="menuBtn" aria-label="เมนู">⋯</button></div>
+    </div>
+    <div class="search" id="searchBox"><input id="q" type="search" placeholder="ค้นหา..." autocomplete="off"></div>
+  </header>
+  <main id="view"></main>
+  <nav><div class="in" id="nav"></div></nav>
+</div>
+<div class="gate" id="gate" hidden>
+  <div class="gate-in">
+    <h1 style="font-size:22px;white-space:nowrap">ระบบบริหารข้อมูล ชนอ.59</h1>
+    <form id="gateForm" autocomplete="off">
+      <label for="pin">รหัสเข้าใช้งาน</label>
+      <div class="pw"><input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="off"><button type="button" id="pinToggle" aria-label="แสดงรหัสผ่าน">แสดง</button></div>
+      <button class="btn p" style="margin-top:14px;width:100%">เข้าสู่ระบบ</button>
+    </form>
+    <p class="hint" id="gateMsg"></p>
+  </div>
+</div>
+
+<script type="module">
+/* ---------- helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const arabic = s => String(s ?? '').replace(/[๐-๙]/g, c => String(c.charCodeAt(0)-0xE50));
+const esc = s => arabic(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const MS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const thDate = iso => { if (!iso) return ''; const [y,m,d] = iso.split('-').map(Number); return `${d} ${MS[m-1]} ${y+543}`; };
+const fmtSize = n => n > 1048576 ? (n/1048576).toFixed(1)+' MB' : Math.max(1, Math.round(n/1024))+' KB';
+function toast(msg){ const t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.append(t); setTimeout(()=>t.remove(), 2200); }
+
+/* ---------- ตั้งค่า Firebase (แก้เฉพาะส่วนนี้) ---------- */
+// ค่าใน firebaseConfig ไม่ใช่ความลับ คัดลอกจาก Firebase Console > Project settings > Your apps > Web app
+const firebaseConfig = {
+  apiKey: "AIzaSyCImerwqrFXYJlwR-nNgpA86ghWu9hb7w4",
+  authDomain: "rtafa59.firebaseapp.com",
+  projectId: "rtafa59",
+  storageBucket: "rtafa59.firebasestorage.app",
+  messagingSenderId: "899595633650",
+  appId: "1:899595633650:web:c396ec7fb6f4f8104aa16b",
+};
+const SHARED_EMAIL = "class59@chanor59.app";   // บัญชีกลางของรุ่น (สร้างใน Authentication > Users)
+const PW_PREFIX = "chanor59-";                  // รหัสผ่านจริงของบัญชีกลาง = PW_PREFIX + รหัสเข้าใช้งาน (เช่น chanor59-5259)
+
+/* ---------- storage (Firebase: Auth รหัสกลาง + Firestore) ---------- */
+const DEMO = new URLSearchParams(location.search).has('demo');   // ?demo=1 = ทดลองในหน่วยความจำ ไม่ต่อ Firebase
+const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+async function firebaseBackend(){
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('YOUR')) throw new Error('NOCONFIG');
+  const { initializeApp } = await import(SDK + 'firebase-app.js');
+  const A = await import(SDK + 'firebase-auth.js');
+  const F = await import(SDK + 'firebase-firestore.js');
+  const app = initializeApp(firebaseConfig);
+  const auth = A.getAuth(app);
+  const fs = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) });
+  const col = n => F.collection(fs, n);
+  return {
+    onAuth: cb => A.onAuthStateChanged(auth, u => cb(!!u)),
+    login: pin => A.signInWithEmailAndPassword(auth, SHARED_EMAIL, PW_PREFIX + pin),
+    logout: () => A.signOut(auth),
+    subscribe(cb){
+      const st = { contacts: [], docs: [] };
+      const fire = () => cb({ contacts: st.contacts, docs: st.docs });
+      const onErr = e => toast('อ่านข้อมูลไม่ได้: ' + (e.code || e.message));
+      const u1 = F.onSnapshot(col('contacts'), q => { st.contacts = q.docs.map(d => ({ ...d.data(), id: d.id })); fire(); }, onErr);
+      const u2 = F.onSnapshot(col('docs'), q => { st.docs = q.docs.map(d => ({ ...d.data(), id: d.id })); fire(); }, onErr);
+      return () => { u1(); u2(); };
+    },
+    put: (c, rec) => F.setDoc(F.doc(fs, c, rec.id), rec),
+    del: (c, id) => F.deleteDoc(F.doc(fs, c, id)),
+  };
+}
+function memoryBackend(){
+  const st = { contacts: [], docs: [] }; let authCb = () => {}, sub = null, ok = false;
+  const fire = () => sub && sub({ contacts: [...st.contacts], docs: [...st.docs] });
+  return {
+    onAuth: cb => { authCb = cb; cb(ok); return () => {}; },
+    login: async pin => { if (pin !== '5259') throw { code: 'auth/invalid-credential' }; ok = true; authCb(true); },
+    logout: async () => { ok = false; authCb(false); },
+    subscribe(cb){ sub = cb; fire(); return () => { sub = null; }; },
+    put: async (c, rec) => { st[c] = st[c].filter(x => x.id !== rec.id).concat(rec); fire(); },
+    del: async (c, id) => { st[c] = st[c].filter(x => x.id !== id); fire(); },
+  };
+}
+let backend = null;
+const put = (c, rec) => backend.put(c, JSON.parse(JSON.stringify(rec)));   // ตัดค่า undefined ออก
+const del = (c, id) => backend.del(c, id);
+
+let isAdmin = false; try{ isAdmin = sessionStorage.getItem('admin')==='1'; }catch{}
+let sortKey = 'year', sortDir = -1, unitFilter = '';
+const chk = str=>{let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0;i<str.length;i++){const c=str.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);};
+let unlocked = new Set(); try{ unlocked = new Set(JSON.parse(sessionStorage.getItem('unlocked')||'[]')); }catch{}
+const saveUnlocked = ()=>{ try{ sessionStorage.setItem('unlocked', JSON.stringify([...unlocked])); }catch{} };
+const canEdit = c => isAdmin || unlocked.has(c.id);
+// รหัสสมาชิก = วัน(2) เดือน(2) ปี พ.ศ.(2 หลักท้าย) เช่น 3 เม.ย. 2534 -> 030434
+const memberCode = c => { if(!c.birthday) return null; const [y,m,d]=c.birthday.split('-'); return d.padStart(2,'0')+m.padStart(2,'0')+String(+y+543).slice(-2); };
+const ADMIN_HASH = 2772777017075273;
+let contacts = [], docs = [], tab = 'phone', bdView = 'soon', docCat = 'ทั้งหมด', query = '';
+
+/* ---------- icons ---------- */
+const IC = {
+  phone:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zm-1 7V3.5L18.5 9zM8 13h8v1.5H8zm0 3h8v1.5H8z"/></svg>',
+  cake:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 6a2 2 0 002-2c0-.4-.2-.8-.4-1.1L12 1l-1.6 1.9c-.2.3-.4.7-.4 1.1a2 2 0 002 2zm4.6 9.99l-1.07-1.07-1.08 1.07a2.7 2.7 0 01-3.8 0l-1.08-1.07-1.09 1.07c-.5.5-1.18.8-1.9.8-.6 0-1.2-.2-1.6-.5V19a2 2 0 002 2h12a2 2 0 002-2v-3.7c-.5.3-1 .5-1.6.5-.7 0-1.4-.3-1.9-.8zM18 9h-5V7h-2v2H6a3 3 0 00-3 3v1.5c0 .8.7 1.5 1.5 1.5.4 0 .8-.2 1.1-.4l1.9-1.9 1.9 1.9c.6.6 1.5.6 2.1 0l1.9-1.9 1.9 1.9c.3.3.7.4 1.1.4.8 0 1.5-.7 1.5-1.5V12a3 3 0 00-3-3z"/></svg>'
+};
+
+/* ---------- birthdays ---------- */
+function nextBirthday(iso, today){
+  const [y,m,d] = iso.split('-').map(Number);
+  const mk = yr => { const dt = new Date(yr, m-1, d); if (m===2 && d===29 && dt.getMonth()!==1) return new Date(yr,1,28); return dt; };
+  let n = mk(today.getFullYear());
+  if (n < today) n = mk(today.getFullYear()+1);
+  return { date:n, days:Math.round((n - today)/86400000), age:n.getFullYear()-y };
+}
+function bdList(){
+  const t = new Date(); t.setHours(0,0,0,0);
+  return contacts.filter(c=>c.birthday).map(c=>({c, ...nextBirthday(c.birthday,t)})).sort((a,b)=>a.days-b.days);
+}
+const bdCount = () => bdList().filter(x=>x.days<=7).length;
+
+/* ---------- rendering ---------- */
+const TABS = [['phone','สมุดโทรศัพท์','phone'],['docs','เอกสารคำสั่ง','doc'],['bday','วันเกิด','cake']];
+function renderNav(){
+  const n = bdCount();
+  $('#nav').innerHTML = TABS.map(([k,l,i])=>`<button class="${tab===k?'on':''}" data-tab="${k}">${IC[i]}<span>${l}</span>${k==='bday'&&n?`<b class="dot">${n}</b>`:''}</button>`).join('');
+}
+function render(){
+  const info = {phone:['สมุดโทรศัพท์',`${contacts.length} รายชื่อ${isAdmin?' · โหมด Admin':unlocked.size?' · แก้ไขข้อมูลตัวเองได้':''}`],docs:['เอกสารคำสั่งที่เกี่ยวข้อง',`${docs.length} เอกสาร${isAdmin?' · โหมด Admin':''}`],bday:['วันเกิด','ชนอ.59']}[tab];
+  $('#title').innerHTML = `${info[0]}<small>${info[1]}</small>`;
+  $('#searchBox').style.display = tab==='bday' ? 'none' : '';
+  $('#q').placeholder = tab==='phone' ? 'ค้นหาชื่อ เบอร์ ตำแหน่ง...' : 'ค้นหาชื่อเอกสาร เลขที่...';
+  $('#addBtn').style.display = tab==='bday' ? 'none' : '';
+  renderNav();
+  $('#view').innerHTML = ({phone:vPhone,docs:vDocs,bday:vBday})[tab]();
+}
+const fullName = c => [c.rank, c.name].filter(Boolean).join(' ');
+const initial = c => (c.name||'?').replace(/^[เแโใไ]/,'').charAt(0);
+
+function contactRow(c, extra=''){
+  const sub = c.position || c.unit || c.phone || '';
+  return `<div class="card"><div class="row" data-open="${c.id}">
+    <div class="av">${esc(initial(c))}</div>
+    <div class="grow"><div class="t">${esc(fullName(c))}${c.nickname?` (${esc(c.nickname)})`:''}</div><div class="s">${esc(sub)}</div></div>
+    ${extra}${c.phone?`<a class="call" href="tel:${esc(c.phone)}" data-stop aria-label="โทร">${IC.phone}</a>`:''}</div></div>`;
+}
+function unitList(){
+  const m = new Map();
+  for (const c of contacts){ const k = c.unit || 'ไม่ระบุหน่วย'; const g = m.get(k) || {n:0, ord:c.ord ?? 1e6}; g.n++; g.ord = Math.min(g.ord, c.ord ?? 1e6); m.set(k,g); }
+  return [...m].sort((x,y)=> x[1].ord-y[1].ord || x[0].localeCompare(y[0],'th'));
+}
+function vPhone(){
+  const q = query.trim().toLowerCase();
+  const units = unitList();
+  if (unitFilter && !units.some(u=>u[0]===unitFilter)) unitFilter = '';
+  const sel = `<select class="unitsel" id="unitSel"><option value="">หน่วยงาน: ทั้งหมด (${contacts.length})</option>${units.map(([k,g])=>`<option value="${esc(k)}"${k===unitFilter?' selected':''}>${esc(k)} (${g.n})</option>`).join('')}</select>`;
+  const list = contacts.filter(c => (!unitFilter || (c.unit||'ไม่ระบุหน่วย')===unitFilter) && (!q || [c.rank,c.name,c.nickname,c.position,c.unit,c.phone,c.phone2,c.email,c.note].join(' ').replace(/[๐-๙]/g,x=>String(x.charCodeAt(0)-0xE50)).toLowerCase().includes(q)));
+  if (!list.length) return sel + `<div class="empty">${contacts.length?'ไม่พบรายชื่อที่ค้นหา':'ยังไม่มีรายชื่อ<br>กดปุ่ม + เพิ่ม'}</div>`;
+  const groups = new Map();
+  for (const c of list){ const k = c.unit || 'ไม่ระบุหน่วย'; if(!groups.has(k)) groups.set(k, []); groups.get(k).push(c); }
+  const ordOf = v => Math.min(...v.map(c=>c.ord ?? 1e6));
+  return sel + [...groups].sort((x,y)=> ordOf(x[1])-ordOf(y[1]) || x[0].localeCompare(y[0],'th'))
+    .map(([k,v])=>`<div class="letter">${esc(k)} · ${v.length}</div>` + v.sort((x,y)=>x.name.localeCompare(y.name,'th')).map(c=>contactRow(c)).join('')).join('');
+}
+function fileExt(d){ const m = /\.([a-z0-9]+)$/i.exec(d.fileName||''); return m ? m[1].slice(0,4).toUpperCase() : 'FILE'; }
+const docYear = d => +d.year || (d.date ? +d.date.slice(0,4)+543 : 0);
+function vDocs(){
+  const cats = ['ทั้งหมด', ...new Set(docs.map(d=>d.category).filter(Boolean))];
+  if (!cats.includes(docCat)) docCat = 'ทั้งหมด';
+  const q = query.trim().toLowerCase();
+  const val = d => sortKey==='year' ? docYear(d) : String(d[sortKey]||'');
+  const list = docs.filter(d => (docCat==='ทั้งหมด'||d.category===docCat) && (!q || [d.title,d.number,d.category,d.note,d.fileName,d.year].join(' ').replace(/[๐-๙]/g,c=>String(c.charCodeAt(0)-0xE50)).toLowerCase().includes(q)))
+    .sort((x,y)=>{ const a=val(x), b=val(y); const c = typeof a==='number' ? a-b : a.localeCompare(b,'th'); return (c||x.title.localeCompare(y.title,'th'))*sortDir; });
+  const chips = `<div class="chips">${cats.map(c=>`<button class="chip ${c===docCat?'on':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</div>`;
+  const sb = (k,l) => `<button data-sort="${k}" class="${sortKey===k?'on':''}">${l}${sortKey===k?(sortDir>0?' ↑':' ↓'):''}</button>`;
+  const bar = `<div class="sort"><span>เรียงตาม</span>${sb('title','ชื่อ')}${sb('year','พ.ศ.')}${sb('category','ประเภท')}</div>`;
+  if (!list.length) return chips + bar + `<div class="empty">${docs.length?'ไม่พบเอกสาร':'ยังไม่มีเอกสาร'}</div>`;
+  return chips + bar + list.map(d=>`<div class="card"><div class="row" data-doc="${d.id}">
+    <div class="grow"><div class="t">${esc(d.title)}</div>
+    <div class="s">${d.category?`<span class="tag">${esc(d.category)}</span>`:''}${esc([d.number, thDate(d.date)||(docYear(d)?'พ.ศ. '+docYear(d):'')].filter(Boolean).join(' · '))}</div></div>
+    ${isAdmin?`<button class="edit" data-edit="${d.id}">แก้ไข</button>`:''}</div></div>`).join('');
+}
+function vBday(){
+  const all = bdList();
+  if (!all.length) return `<div class="empty">ยังไม่มีข้อมูลวันเกิด<br>ระบุวันเกิดในหน้าแก้ไขรายชื่อสมุดโทรศัพท์</div>`;
+  const seg = `<div class="seg"><button data-bd="soon" class="${bdView==='soon'?'on':''}">ใกล้ถึง</button><button data-bd="month" class="${bdView==='month'?'on':''}">แยกตามเดือน</button></div>`;
+  const today = all.filter(x=>x.days===0);
+  const badge = x => x.days===0 ? `<div class="badge today">วันนี้</div>` : `<div class="badge ${x.days<=7?'soon':''}">อีก ${x.days} วัน</div>`;
+  const line = x => contactRow(x.c, badge(x)).replace('</div></div></div>', `</div></div></div>`).replace(/(<div class="s">)([^<]*)/, `$1${x.date.getDate()} ${MS[x.date.getMonth()]} · ครบ ${x.age} ปี`);
+  if (bdView==='soon'){
+    const hero = today.length ? `<div class="hero"><b>วันนี้วันเกิด</b><br>${today.map(x=>esc(fullName(x.c))).join(', ')}</div>` : '';
+    return seg + hero + all.map(line).join('');
+  }
+  const t = new Date(); let out = seg;
+  const byM = Array.from({length:12},()=>[]);
+  all.forEach(x=>byM[+x.c.birthday.split('-')[1]-1].push(x));
+  byM.forEach((arr,i)=>{ if(!arr.length) return;
+    out += `<div class="letter">${MONTHS[i]}${i===t.getMonth()?' (เดือนนี้)':''}</div>` +
+      arr.sort((a,b)=>+a.c.birthday.split('-')[2]-+b.c.birthday.split('-')[2]).map(x=>{
+        const d = +x.c.birthday.split('-')[2];
+        return contactRow(x.c, `<div class="badge">${d} ${MS[i]}</div>`);
+      }).join('');
+  });
+  return out;
+}
+
+/* ---------- sheet ---------- */
+function sheet(html){
+  closeSheet();
+  const ov = document.createElement('div'); ov.className='ov'; ov.id='ov';
+  ov.innerHTML = `<div class="sheet">${html}</div>`;
+  ov.addEventListener('click', e=>{ if(e.target===ov) closeSheet(); });
+  document.body.append(ov); document.body.style.overflow='hidden';
+  return ov.firstChild;
+}
+function closeSheet(){ const o=$('#ov'); if(o){ o.remove(); document.body.style.overflow=''; } }
+
+function contactDetail(id){
+  const c = contacts.find(x=>x.id===id); if(!c) return;
+  const kv = (k,v)=> v ? `<div class="kv"><span>${k}</span><span>${v}</span></div>` : '';
+  const tel = p => p ? `<a href="tel:${esc(p)}">${esc(p)}</a>` : '';
+  const s = sheet(`<h2>${esc(fullName(c))}${c.nickname?` (${esc(c.nickname)})`:''}</h2>
+    ${kv('ตำแหน่ง',esc(c.position))}${kv('หน่วย',esc(c.unit))}${kv('โทรศัพท์',tel(c.phone))}${kv('โทรศัพท์ 2',tel(c.phone2))}
+    ${kv('อีเมล',c.email?`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:'')}${kv('LINE ID',esc(c.line))}
+    ${kv('วันเกิด',c.birthday?thDate(c.birthday):'')}${kv('หมายเหตุ',esc(c.note).replace(/\n/g,'<br>'))}
+    <div class="btns">${c.phone?`<a class="btn p" href="tel:${esc(c.phone)}">โทร</a><a class="btn" href="sms:${esc(c.phone)}">SMS</a>`:''}<button class="btn" id="ed">แก้ไข</button></div>`);
+  $('#ed',s).onclick = ()=> canEdit(c) ? contactForm(id) : unlockContact(id);
+}
+function unlockContact(id){
+  const c = contacts.find(x=>x.id===id); if(!c) return;
+  const s = sheet(`<h2>ยืนยันตัวตน</h2><div class="s" style="white-space:normal">${esc(fullName(c))}</div>
+    <form id="f" autocomplete="off"><label>รหัสผ่าน</label><input name="pw" type="password" inputmode="text" autocomplete="off">
+    <div class="hint">สมาชิก: ใช้วันเกิดตัวเอง 6 หลัก (วัน เดือน ปี พ.ศ. 2 หลักท้าย) เช่น 3 เม.ย. 2534 = 030434<br>ผู้ดูแล: ใช้รหัส Admin</div>
+    <div class="btns"><button type="button" class="btn" id="cx">ยกเลิก</button><button class="btn p">ยืนยัน</button></div></form>`);
+  $('#cx',s).onclick = closeSheet; $('input',s).focus();
+  $('#f',s).onsubmit = e=>{ e.preventDefault();
+    const pw = String(new FormData(e.target).get('pw')).trim();
+    if (chk(pw) === ADMIN_HASH){ isAdmin = true; try{ sessionStorage.setItem('admin','1'); }catch{} }
+    else if (memberCode(c) && pw === memberCode(c)){ unlocked.add(id); saveUnlocked(); }
+    else return toast(memberCode(c) ? 'รหัสผ่านไม่ถูกต้อง' : 'ยังไม่มีข้อมูลวันเกิด ติดต่อ Admin');
+    render(); contactForm(id); };
+}
+const RANKS = ['น.ต.','น.ท.','น.อ.','พล.อ.ต.','พล.อ.ท.','พล.อ.อ.'];
+function rankSelect(cur){
+  const opts = cur && !RANKS.includes(cur) ? [...RANKS, cur] : RANKS;
+  return `<label>ยศ</label><select name="rank"><option value="">- ไม่ระบุ -</option>${opts.map(r=>`<option${r===cur?' selected':''}>${esc(r)}</option>`).join('')}</select>`;
+}
+function contactForm(id){
+  const c = contacts.find(x=>x.id===id) || {};
+  if (id && !canEdit(c)) return toast('ไม่มีสิทธิ์แก้ไข');
+  const f = (k,l,t='text',ph='') => `<label>${l}</label><input name="${k}" type="${t}" value="${esc(c[k])}" placeholder="${ph}">`;
+  const s = sheet(`<h2>${id?'แก้ไขรายชื่อ':'เพิ่มรายชื่อ'}</h2><form id="f" autocomplete="off">
+    <div class="two"><div>${rankSelect(c.rank)}</div><div>${f('nickname','ชื่อเล่น')}</div></div>
+    ${f('name','ชื่อ - สกุล *')}${f('position','ตำแหน่ง')}${f('unit','หน่วย')}
+    <div class="two"><div>${f('phone','โทรศัพท์','tel')}</div><div>${f('phone2','โทรศัพท์ 2','tel')}</div></div>
+    ${f('email','อีเมล','email')}${f('line','LINE ID')}
+    ${f('birthday','วันเกิด','date')}<div class="hint">ใช้แสดงในหน้า "วันเกิด" และเป็นรหัสแก้ไขข้อมูลตัวเอง (เลือกเป็น ค.ศ. ระบบจะแสดงเป็น พ.ศ.)</div>
+    <label>หมายเหตุ</label><textarea name="note">${esc(c.note)}</textarea>
+    <div class="btns">${id&&isAdmin?'<button type="button" class="btn d" id="del">ลบ</button>':''}<button type="button" class="btn" id="cx">ยกเลิก</button><button class="btn p">บันทึก</button></div></form>`);
+  $('#cx',s).onclick = closeSheet;
+  if (id && isAdmin) $('#del',s).onclick = async()=>{ if(confirm(`ลบ "${c.name}" ?`)){ await del('contacts',id); contacts=contacts.filter(x=>x.id!==id); closeSheet(); render(); toast('ลบแล้ว'); } };
+  $('#f',s).onsubmit = async e=>{
+    e.preventDefault();
+    const o = Object.fromEntries(new FormData(e.target)); for (const k in o) o[k]=arabic(o[k]).trim();
+    if (!o.name) return toast('กรุณากรอกชื่อ');
+    const rec = {...c, ...o, id: c.id||uid()};
+    if (!c.id && !isAdmin){ unlocked.add(rec.id); saveUnlocked(); }
+    await put('contacts', rec);
+    contacts = contacts.filter(x=>x.id!==rec.id).concat(rec);
+    closeSheet(); render(); toast('บันทึกแล้ว');
+  };
+}
+function openDoc(id){
+  const d = docs.find(x=>x.id===id); if(!d) return;
+  if (d.url){ window.open(d.url,'_blank','noopener'); return; }
+  toast('เอกสารนี้ไม่มีไฟล์แนบ');
+}
+function adminLogin(cb){
+  const s = sheet(`<h2>เข้าสู่โหมด Admin</h2><form id="f"><label>รหัสผ่าน</label><input name="pw" type="password" autocomplete="off">
+    <div class="btns"><button type="button" class="btn" id="cx">ยกเลิก</button><button class="btn p">เข้าสู่ระบบ</button></div></form>`);
+  $('#cx',s).onclick = closeSheet; $('input',s).focus();
+  $('#f',s).onsubmit = e=>{ e.preventDefault();
+    if (chk(new FormData(e.target).get('pw')) !== ADMIN_HASH) return toast('รหัสผ่านไม่ถูกต้อง');
+    isAdmin = true; try{ sessionStorage.setItem('admin','1'); }catch{}
+    closeSheet(); render(); toast('เข้าสู่โหมด Admin แล้ว'); if(cb) cb(); };
+}
+function adminLogoutQuiet(){ isAdmin=false; unlocked.clear(); try{ sessionStorage.removeItem('admin'); sessionStorage.removeItem('unlocked'); }catch{} }
+function adminLogout(){ isAdmin=false; unlocked.clear(); try{ sessionStorage.removeItem('admin'); sessionStorage.removeItem('unlocked'); }catch{} closeSheet(); render(); toast('ออกจากระบบแล้ว'); }
+function docForm(id){
+  const d = docs.find(x=>x.id===id) || {};
+  const cats = [...new Set(['คำสั่ง','ประกาศ','ระเบียบ','หนังสือ','ตารางเวร','อื่นๆ', ...docs.map(x=>x.category).filter(Boolean)])];
+  const s = sheet(`<h2>${id?'แก้ไขเอกสาร':'เพิ่มเอกสาร'}</h2><form id="f" autocomplete="off">
+    <label>ชื่อเอกสาร *</label><input name="title" value="${esc(d.title)}">
+    <div class="two"><div><label>หมวด</label><input name="category" list="cats" value="${esc(d.category)}"></div><div><label>เลขที่</label><input name="number" value="${esc(d.number)}"></div></div>
+    <datalist id="cats">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+    <div class="two"><div><label>พ.ศ.</label><input name="year" inputmode="numeric" value="${esc(d.year)}"></div><div><label>ลงวันที่</label><input name="date" type="date" value="${esc(d.date)}"></div></div>
+    <label>ลิงก์ (Google Drive ฯลฯ)</label><input name="url" type="url" value="${esc(d.url)}" placeholder="https://">
+    <label>หมายเหตุ</label><textarea name="note">${esc(d.note)}</textarea>
+    <div class="btns">${id?'<button type="button" class="btn d" id="del">ลบ</button>':''}<button type="button" class="btn" id="cx">ยกเลิก</button><button class="btn p">บันทึก</button></div></form>`);
+  $('#cx',s).onclick = closeSheet;
+  if (id) $('#del',s).onclick = async()=>{ if(confirm(`ลบ "${d.title}" ?`)){ await del('docs',id); docs=docs.filter(x=>x.id!==id); closeSheet(); render(); toast('ลบแล้ว'); } };
+  $('#f',s).onsubmit = async e=>{
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const o = {}; ['title','category','number','date','note','url','year'].forEach(k=>o[k]=arabic(fd.get(k)||'').trim());
+    if (!o.title) return toast('กรุณากรอกชื่อเอกสาร');
+    const rec = {...d, ...o, id:d.id||uid(), created:d.created||Date.now()};
+    try { await put('docs', rec); } catch { return toast('บันทึกไม่สำเร็จ'); }
+    docs = docs.filter(x=>x.id!==rec.id).concat(rec);
+    closeSheet(); render(); toast('บันทึกแล้ว');
+  };
+}
+
+/* ---------- backup / restore ---------- */
+async function backup(){
+  toast('กำลังสร้างไฟล์สำรอง...');
+  const blob = new Blob([JSON.stringify({app:'chanor59',v:2,at:new Date().toISOString(),contacts,docs})],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`chanor59-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+}
+function exportCSV(){
+  const cols=[['rank','ยศ'],['name','ชื่อ-สกุล'],['nickname','ชื่อเล่น'],['position','ตำแหน่ง'],['unit','หน่วย'],['phone','โทรศัพท์'],['phone2','โทรศัพท์ 2'],['email','อีเมล'],['line','LINE'],['birthday','วันเกิด'],['note','หมายเหตุ']];
+  const q = v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const csv = '﻿'+[cols.map(c=>q(c[1])).join(','),...contacts.map(c=>cols.map(k=>q(c[k[0]])).join(','))].join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='สมุดโทรศัพท์.csv'; a.click();
+}
+async function restore(file){
+  try{
+    const j = JSON.parse(await file.text());
+    if (j.app!=='chanor59') throw 0;
+    for (const c of j.contacts||[]) await put('contacts',c);
+    for (const d of j.docs||[]) await put('docs',d);
+    toast('นำเข้า/กู้คืนข้อมูลแล้ว ('+((j.contacts||[]).length+(j.docs||[]).length)+' รายการ)');
+  }catch{ toast('ไฟล์สำรองไม่ถูกต้อง'); }
+}
+function menu(){
+  const s = sheet(`<h2>เมนู</h2>
+    <div class="btns" style="flex-direction:column">
+      <button class="btn" id="b1">สำรองข้อมูลทั้งหมด (JSON)</button>
+      <button class="btn" id="b2">นำเข้า/กู้คืนจากไฟล์ (Admin)</button>
+      <button class="btn" id="b3">ส่งออกสมุดโทรศัพท์ (CSV)</button>
+      <button class="btn" id="b4">${isAdmin||unlocked.size?'ออกจากโหมดแก้ไข':'เข้าสู่โหมด Admin'}</button>
+      <button class="btn" id="b5">ออกจากระบบ (ล็อกเอาต์)</button>
+    </div>
+    <p class="hint">ข้อมูลเก็บบน Firebase ใช้ร่วมกันทั้งรุ่น ทุกเครื่องเห็นข้อมูลชุดเดียวกัน แนะนำให้สำรองเป็นไฟล์ไว้เป็นระยะ</p>
+    <input type="file" id="rf" accept=".json" hidden>`);
+  $('#b1',s).onclick=backup; $('#b3',s).onclick=exportCSV;
+  $('#b2',s).onclick=()=>{ if(!isAdmin){ closeSheet(); toast('ต้องเข้าโหมด Admin ก่อน'); return; } $('#rf',s).click(); };
+  $('#b5',s).onclick=()=>{ closeSheet(); adminLogoutQuiet(); backend.logout(); };
+  $('#b4',s).onclick=()=>{ (isAdmin||unlocked.size) ? adminLogout() : adminLogin(); };
+  $('#rf',s).onchange=e=>{ if(e.target.files[0]){ closeSheet(); restore(e.target.files[0]); } };
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', e=>{
+  const t = e.target;
+  if (t.closest('[data-stop]')) return;
+  let el;
+  if ((el=t.closest('[data-tab]'))){ tab=el.dataset.tab; query=''; $('#q').value=''; render(); scrollTo(0,0); }
+  else if ((el=t.closest('[data-open]'))) contactDetail(el.dataset.open);
+  else if ((el=t.closest('[data-edit]'))) docForm(el.dataset.edit);
+  else if ((el=t.closest('[data-doc]'))) openDoc(el.dataset.doc);
+  else if ((el=t.closest('[data-sort]'))){ const k=el.dataset.sort; if(sortKey===k) sortDir=-sortDir; else { sortKey=k; sortDir=k==='year'?-1:1; } render(); }
+  else if ((el=t.closest('[data-cat]'))){ docCat=el.dataset.cat; render(); }
+  else if ((el=t.closest('[data-bd]'))){ bdView=el.dataset.bd; render(); }
+});
+$('#addBtn').onclick = ()=> tab==='phone' ? contactForm() : (isAdmin ? docForm() : adminLogin(docForm));
+$('#menuBtn').onclick = menu;
+document.addEventListener('change', e=>{ if (e.target.id==='unitSel'){ unitFilter = e.target.value; render(); } });
+$('#q').addEventListener('input', e=>{ query=arabic(e.target.value); $('#view').innerHTML = tab==='phone'?vPhone():vDocs(); });
+
+/* ---------- เริ่มต้น: ล็อกอินรหัสกลาง แล้วค่อยโหลดข้อมูล ---------- */
+const gate = $('#gate');
+const gateMsg = t => { $('#gateMsg').textContent = t || ''; };
+function showGate(msg){ gate.hidden = false; gateMsg(msg); setTimeout(() => $('#pin').focus(), 50); }
+let unsub = null;
+$('#pinToggle').addEventListener('click', () => {
+  const p = $('#pin'), show = p.type === 'password';
+  p.type = show ? 'text' : 'password';
+  $('#pinToggle').textContent = show ? 'ซ่อน' : 'แสดง';
+  $('#pinToggle').setAttribute('aria-label', show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
+  p.focus();
+});
+$('#gateForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!backend) return;
+  const pin = $('#pin').value.trim(); if (!pin) return;
+  gateMsg('กำลังตรวจสอบ...');
+  try { await backend.login(pin); $('#pin').value = ''; gateMsg(''); }
+  catch (err) { gateMsg(/invalid|wrong|credential|user-not-found/.test(err.code || '') ? 'รหัสไม่ถูกต้อง' : 'เข้าสู่ระบบไม่สำเร็จ: ' + (err.code || err.message)); }
+});
+(async () => {
+  try { backend = DEMO ? memoryBackend() : await firebaseBackend(); }
+  catch (e) {
+    if (e.message === 'NOCONFIG'){
+      showGate('ยังไม่ได้ตั้งค่า Firebase — แก้ firebaseConfig ใน index.html ก่อน (คำแนะนำอยู่ด้านบนของไฟล์)');
+      const a = document.createElement('a'); a.href = '?demo=1'; a.textContent = 'ลองใช้โหมดสาธิต (รหัส 5259 ข้อมูลไม่ถูกบันทึก)'; a.style.cssText = 'display:block;margin-top:10px;color:inherit';
+      $('#gateMsg').append(a);
+    } else showGate('เชื่อมต่อ Firebase ไม่ได้: ' + e.message);
+    render(); return;
+  }
+  backend.onAuth(ok => {
+    if (ok){ gate.hidden = true; unsub = backend.subscribe(d => { contacts = d.contacts; docs = d.docs; render(); }); }
+    else { if (unsub) unsub(); unsub = null; contacts = []; docs = []; showGate(); render(); }
+  });
+  render();
+})();
+window.__app = { get contacts(){ return contacts; }, get docs(){ return docs; }, render, restore, setTab: t => { tab = t; render(); }, get isAdmin(){ return isAdmin; } };
+</script>
+</body></html>
