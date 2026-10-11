@@ -73,6 +73,10 @@ nav button .dot{position:absolute;top:5px;left:calc(50% + 6px);background:var(--
 .hero b{font-weight:600}
 .gate{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}.gate[hidden]{display:none}.gate-in{width:100%;max-width:340px}.gate-in h1{margin:0 0 24px}
 .pw{position:relative}.pw input{padding-right:64px}.pw button{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);font:inherit;font-size:14px;padding:8px 10px;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.gcell{border:1px solid var(--line);background:none;border-radius:12px;padding:10px 4px;font:inherit;color:var(--ink);cursor:pointer;text-align:center}
+.gcell b{display:block;font-weight:600}.gcell span{font-size:12px;color:var(--muted)}.gcell.mine{border-color:var(--ink);border-width:2px}.gcell[disabled]{opacity:.3;cursor:default}
+.bar{display:flex;gap:8px;align-items:center;margin:6px 0 10px}.more{width:100%;margin:12px 0}
 .unitsel{width:100%;margin:2px 0 6px;font-size:14px;color:var(--ink)}
 .sort{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--muted);padding:2px 0 6px}.sort button{border:0;background:none;font:inherit;color:var(--muted);cursor:pointer;padding:2px 0}.sort button.on{color:var(--ink);font-weight:600}.edit{flex:none;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;padding:6px}
 .doc-ic{flex:none;width:38px;height:38px;border-radius:8px;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--muted)}
@@ -204,6 +208,7 @@ let contacts = [], docs = [], tab = 'phone', bdView = 'soon', docCat = 'ทั�
 const IC = {
   phone:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg>',
   doc:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zm-1 7V3.5L18.5 9zM8 13h8v1.5H8zm0 3h8v1.5H8z"/></svg>',
+  book:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2zM9 4h2v5l-1-.75L9 9V4zm9 16H6V4h1v9l3-2.25L13 13V4h5v16z"/></svg>',
   cake:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 6a2 2 0 002-2c0-.4-.2-.8-.4-1.1L12 1l-1.6 1.9c-.2.3-.4.7-.4 1.1a2 2 0 002 2zm4.6 9.99l-1.07-1.07-1.08 1.07a2.7 2.7 0 01-3.8 0l-1.08-1.07-1.09 1.07c-.5.5-1.18.8-1.9.8-.6 0-1.2-.2-1.6-.5V19a2 2 0 002 2h12a2 2 0 002-2v-3.7c-.5.3-1 .5-1.6.5-.7 0-1.4-.3-1.9-.8zM18 9h-5V7h-2v2H6a3 3 0 00-3 3v1.5c0 .8.7 1.5 1.5 1.5.4 0 .8-.2 1.1-.4l1.9-1.9 1.9 1.9c.6.6 1.5.6 2.1 0l1.9-1.9 1.9 1.9c.3.3.7.4 1.1.4.8 0 1.5-.7 1.5-1.5V12a3 3 0 00-3-3z"/></svg>'
 };
 
@@ -222,19 +227,19 @@ function bdList(){
 const bdCount = () => bdList().filter(x=>x.days<=7).length;
 
 /* ---------- rendering ---------- */
-const TABS = [['phone','สมุดโทรศัพท์','phone'],['docs','เอกสารคำสั่ง','doc'],['bday','วันเกิด','cake']];
+const TABS = [['phone','สมุดโทรศัพท์','phone'],['docs','เอกสารคำสั่ง','doc'],['bday','วันเกิด','cake'],['ntt','ทำเนียบ นตท.','book']];
 function renderNav(){
   const n = bdCount();
   $('#nav').innerHTML = TABS.map(([k,l,i])=>`<button class="${tab===k?'on':''}" data-tab="${k}">${IC[i]}<span>${l}</span>${k==='bday'&&n?`<b class="dot">${n}</b>`:''}</button>`).join('');
 }
 function render(){
-  const info = {phone:['สมุดโทรศัพท์',`${contacts.length} รายชื่อ${isAdmin?' · โหมด Admin':unlocked.size?' · แก้ไขข้อมูลตัวเองได้':''}`],docs:['เอกสารคำสั่งที่เกี่ยวข้อง',`${docs.length} เอกสาร${isAdmin?' · โหมด Admin':''}`],bday:['วันเกิด','ชนอ.59']}[tab];
+  const info = {phone:['สมุดโทรศัพท์',`${contacts.length} รายชื่อ${isAdmin?' · โหมด Admin':unlocked.size?' · แก้ไขข้อมูลตัวเองได้':''}`],docs:['เอกสารคำสั่งที่เกี่ยวข้อง',`${docs.length} เอกสาร${isAdmin?' · โหมด Admin':''}`],bday:['วันเกิด','ชนอ.59'],ntt:['ทำเนียบ นตท.', ntt.rows ? nf(ntt.rows.length) + ' รายชื่อ · ' + ntt.runs.length + ' รุ่น' : 'ข้อมูลจาก AFAPS.Database']}[tab];
   $('#title').innerHTML = `${info[0]}<small>${info[1]}</small>`;
   $('#searchBox').style.display = tab==='bday' ? 'none' : '';
-  $('#q').placeholder = tab==='phone' ? 'ค้นหาชื่อ เบอร์ ตำแหน่ง...' : 'ค้นหาชื่อเอกสาร เลขที่...';
-  $('#addBtn').style.display = tab==='bday' ? 'none' : '';
+  $('#q').placeholder = tab==='phone' ? 'ค้นหาชื่อ เบอร์ ตำแหน่ง...' : tab==='ntt' ? 'ค้นหาชื่อ นามสกุล หรือเลขประจำตัว' : 'ค้นหาชื่อเอกสาร เลขที่...';
+  $('#addBtn').style.display = (tab==='bday' || tab==='ntt') ? 'none' : '';
   renderNav();
-  $('#view').innerHTML = ({phone:vPhone,docs:vDocs,bday:vBday})[tab]();
+  $('#view').innerHTML = ({phone:vPhone,docs:vDocs,bday:vBday,ntt:vNtt})[tab]();
 }
 const fullName = c => [c.rank, c.name].filter(Boolean).join(' ');
 const initial = c => (c.name||'?').replace(/^[เแโใไ]/,'').charAt(0);
@@ -453,12 +458,166 @@ function menu(){
   $('#rf',s).onchange=e=>{ if(e.target.files[0]){ closeSheet(); restore(e.target.files[0]); } };
 }
 
+/* ---------- ทำเนียบ นตท. (ข้อมูลจาก https://w2ict.github.io/AFAPS.Database/) ---------- */
+const NTT_URL = 'https://w2ict.github.io/AFAPS.Database/';
+const NTT_MINE = 59;                       // รุ่นของเรา (ไฮไลต์ในตารางรุ่น)
+const SVC_MAIN = ['ทบ.', 'ทร.', 'ทอ.', 'ตร.'];
+const SVC_FULL = { 'ทบ.': 'กองทัพบก', 'ทร.': 'กองทัพเรือ', 'ทอ.': 'กองทัพอากาศ', 'ตร.': 'สำนักงานตำรวจแห่งชาติ' };
+const OTHER = '·อื่น·';
+const ntt = { rows: null, loading: false, err: '', svc: '', view: 'run', run: null, cap: 100, runs: [], meta: new Map() };
+const nf = n => Number(n).toLocaleString('en-US');
+
+function nttLoadScript(src){
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('โหลดตัวแตกไฟล์ไม่สำเร็จ')); document.head.append(s); });
+}
+async function nttInflate(b64){
+  const bs = atob(b64), bin = new Uint8Array(bs.length);
+  for (let i = 0; i < bs.length; i++) bin[i] = bs.charCodeAt(i);
+  if (typeof DecompressionStream === 'function'){
+    const stream = new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(stream).text();
+  }
+  if (!window.pako) await nttLoadScript('https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js');
+  return window.pako.inflate(bin, { to: 'string' });
+}
+async function loadNtt(force){
+  if (ntt.loading || (ntt.rows && !force)) return;
+  ntt.loading = true; ntt.err = ''; render();
+  try{
+    let b64 = null;
+    if (!force) try{ b64 = localStorage.getItem('ntt-b64'); }catch{}
+    if (!b64){
+      const res = await fetch(NTT_URL, { cache: 'no-cache' });
+      if (!res.ok) throw new Error('โหลดไม่สำเร็จ (HTTP ' + res.status + ')');
+      const m = /<script[^>]*id="d"[^>]*>([\s\S]*?)<\/script>/.exec(await res.text());
+      if (!m) throw new Error('ไม่พบข้อมูลในหน้าเว็บทำเนียบ');
+      b64 = m[1].trim();
+      try{ localStorage.setItem('ntt-b64', b64); }catch{}
+    }
+    const txt = await nttInflate(b64);
+    const rows = [], meta = new Map();
+    for (const line of txt.split('\n')){
+      if (!line) continue;
+      const p = line.split('\t');
+      const r = { id: +p[0], fn: p[1] || '', ln: p[2] || '', run: +p[3], br: p[4] || '', ofn: p[5] || '', oln: p[6] || '', note: p[7] || '' };
+      r.nm = (r.fn + ' ' + r.ln).trim() || '(ไม่มีข้อมูลชื่อ)';
+      r.hay = (r.fn + r.ln + r.ofn + r.oln + r.note).replace(/\s+/g, '');
+      rows.push(r);
+      let m2 = meta.get(r.run); if (!m2){ m2 = { n: 0, svc: {} }; meta.set(r.run, m2); }
+      m2.n++; m2.svc[r.br] = (m2.svc[r.br] || 0) + 1;
+    }
+    if (!rows.length) throw new Error('ข้อมูลว่างเปล่า');
+    ntt.rows = rows; ntt.meta = meta; ntt.runs = [...meta.keys()].sort((a, b) => a - b);
+  }catch(e){
+    ntt.err = e.message || String(e);
+    try{ localStorage.removeItem('ntt-b64'); }catch{}
+  }
+  ntt.loading = false; render();
+}
+const nttMatchSvc = r => !ntt.svc || (ntt.svc === OTHER ? !SVC_MAIN.includes(r.br) : r.br === ntt.svc);
+const nttSvcLabel = v => !v ? 'ทุกเหล่า' : v === OTHER ? 'อื่น ๆ' : v;
+function nttRunCount(run){
+  const m = ntt.meta.get(run); if (!m) return 0;
+  if (!ntt.svc) return m.n;
+  if (ntt.svc === OTHER) return Object.entries(m.svc).reduce((t, [k, v]) => t + (SVC_MAIN.includes(k) ? 0 : v), 0);
+  return m.svc[ntt.svc] || 0;
+}
+function nttList(){
+  const q = query.trim().replace(/\s+/g, '');
+  let L = ntt.rows.filter(nttMatchSvc);
+  if (q) L = L.filter(r => r.hay.includes(q) || String(r.id).includes(q));
+  else if (ntt.run != null) L = L.filter(r => r.run === ntt.run);
+  return L;
+}
+function nttTitle(){
+  const q = query.trim();
+  if (q) return 'ผลค้นหา "' + q + '"';
+  return ntt.run != null ? 'รุ่น ' + ntt.run : '';
+}
+function nttRow(r){
+  const old = (r.ofn || r.oln) ? ' · ชื่อเดิม ' + [r.ofn, r.oln].filter(Boolean).join(' ') : '';
+  return `<div class="card"><div class="row" style="cursor:default"><div class="grow"><div class="t">${esc(r.nm)}</div>
+    <div class="s">รุ่น ${r.run} · ${esc(r.br || 'ไม่ระบุเหล่า')} · เลขประจำตัว ${r.id}${esc(old)}${r.note ? ' · ' + esc(r.note) : ''}</div></div></div></div>`;
+}
+function vNtt(){
+  if (ntt.err) return `<div class="empty">โหลดทำเนียบไม่สำเร็จ<br><span class="s">${esc(ntt.err)}</span><br><br><button class="btn p" style="display:inline-block;flex:none;padding:8px 20px" data-nretry>ลองใหม่</button></div>`;
+  if (!ntt.rows) return `<div class="empty">กำลังโหลดทำเนียบ นตท. ...</div>`;
+  const chips = ['', ...SVC_MAIN, OTHER].map(v => `<button class="chip ${ntt.svc === v ? 'on' : ''}" data-nsvc="${esc(v)}">${esc(nttSvcLabel(v))}</button>`).join('');
+  let out = `<div class="chips">${chips}</div>`;
+  const q = query.trim();
+  if (q || ntt.run != null){
+    const L = nttList();
+    const shown = L.slice(0, ntt.cap);
+    out += `<div class="bar">${q ? '' : '<button class="btn" style="flex:none;padding:7px 14px;font-size:14px" data-nback>← รุ่นทั้งหมด</button>'}
+      <div class="grow"><div class="t">${esc(nttTitle())}</div><div class="s">${nf(L.length)} คน${ntt.svc ? ' · ' + esc(nttSvcLabel(ntt.svc)) : ''}</div></div>
+      <button class="btn" style="flex:none;padding:7px 12px;font-size:14px" data-nexp="pdf">PDF</button>
+      <button class="btn" style="flex:none;padding:7px 12px;font-size:14px" data-nexp="xls">Excel</button></div>`;
+    if (!L.length) return out + `<div class="empty">ไม่พบรายชื่อ</div>`;
+    out += shown.map(nttRow).join('');
+    if (L.length > shown.length) out += `<button class="btn more" data-nmore>แสดงเพิ่ม (อีก ${nf(L.length - shown.length)} คน)</button>`;
+    return out;
+  }
+  out += `<div class="seg"><button data-nview="run" class="${ntt.view === 'run' ? 'on' : ''}">ตามรุ่น</button><button data-nview="svc" class="${ntt.view === 'svc' ? 'on' : ''}">ตามเหล่า</button></div>`;
+  if (ntt.view === 'svc'){
+    const tot = {}; let other = 0;
+    for (const r of ntt.rows){ tot[r.br] = (tot[r.br] || 0) + 1; if (!SVC_MAIN.includes(r.br)) other++; }
+    out += [...SVC_MAIN, OTHER].map(v => {
+      const n = v === OTHER ? other : (tot[v] || 0);
+      return `<div class="card"><div class="row" data-nsvcgo="${esc(v)}"><div class="grow"><div class="t">${esc(v === OTHER ? 'อื่น ๆ' : v + ' ' + SVC_FULL[v])}</div><div class="s">${nf(n)} คน</div></div></div></div>`;
+    }).join('');
+    return out;
+  }
+  out += `<div class="grid">${ntt.runs.map(n => {
+    const c = nttRunCount(n);
+    return `<button class="gcell ${n === NTT_MINE ? 'mine' : ''}" data-nrun="${n}" ${c ? '' : 'disabled'}><b>รุ่น ${n}</b><span>${nf(c)} คน${n === NTT_MINE ? ' · รุ่นเรา' : ''}</span></button>`;
+  }).join('')}</div>`;
+  return out;
+}
+function nttFileName(ext){
+  const parts = ['ทำเนียบนตท'];
+  if (ntt.run != null) parts.push('รุ่น' + ntt.run);
+  if (ntt.svc) parts.push(ntt.svc === OTHER ? 'อื่นๆ' : ntt.svc.replace('.', ''));
+  if (query.trim()) parts.push('ค้นหา');
+  return parts.join('_') + '.' + ext;
+}
+function nttExport(kind){
+  const L = nttList(); if (!L.length) return toast('ไม่มีข้อมูลให้ส่งออก');
+  if (kind === 'xls'){
+    const cols = ['เลขประจำตัว', 'ชื่อ', 'นามสกุล', 'รุ่น', 'เหล่า', 'ชื่อเดิม', 'นามสกุลเดิม', 'หมายเหตุ'];
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = '﻿' + [cols.map(q).join(','), ...L.map(r => [r.id, r.fn, r.ln, r.run, r.br, r.ofn, r.oln, r.note].map(q).join(','))].join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = nttFileName('csv'); a.click();
+    toast('ส่งออก ' + nf(L.length) + ' รายการ (เปิดด้วย Excel ได้)');
+    return;
+  }
+  if (L.length > 3000 && !confirm('รายการมี ' + nf(L.length) + ' คน การพิมพ์เป็น PDF อาจช้า ต้องการทำต่อหรือไม่?')) return;
+  const title = 'ทำเนียบ นตท. ' + [nttTitle(), ntt.svc ? nttSvcLabel(ntt.svc) : ''].filter(Boolean).join(' · ');
+  const html = `<!doctype html><meta charset="utf-8"><title>${esc(title)}</title>
+    <style>body{font-family:Sarabun,'Tahoma',sans-serif;font-size:11pt;margin:14mm}h1{font-size:15pt;margin:0 0 4mm}table{border-collapse:collapse;width:100%}th,td{border:1px solid #888;padding:2px 6px;text-align:left}th{background:#eee}tr{page-break-inside:avoid}</style>
+    <h1>${esc(title)} (${nf(L.length)} คน)</h1>
+    <table><thead><tr><th>#</th><th>เลขประจำตัว</th><th>ชื่อ - นามสกุล</th><th>รุ่น</th><th>เหล่า</th><th>หมายเหตุ</th></tr></thead><tbody>${
+      L.map((r, i) => `<tr><td>${i + 1}</td><td>${r.id}</td><td>${esc(r.nm)}</td><td>${r.run}</td><td>${esc(r.br)}</td><td>${esc([(r.ofn || r.oln) ? 'ชื่อเดิม ' + [r.ofn, r.oln].filter(Boolean).join(' ') : '', r.note].filter(Boolean).join(' · '))}</td></tr>`).join('')
+    }</tbody></table>`;
+  const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.append(f);
+  f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
+  setTimeout(() => { f.contentWindow.focus(); f.contentWindow.print(); setTimeout(() => f.remove(), 2000); }, 300);
+}
+
 /* ---------- events ---------- */
 document.addEventListener('click', e=>{
   const t = e.target;
   if (t.closest('[data-stop]')) return;
   let el;
-  if ((el=t.closest('[data-tab]'))){ tab=el.dataset.tab; query=''; $('#q').value=''; render(); scrollTo(0,0); }
+  if ((el=t.closest('[data-tab]'))){ tab=el.dataset.tab; query=''; $('#q').value=''; if (tab==='ntt'){ ntt.run=null; ntt.cap=100; } render(); scrollTo(0,0); if (tab==='ntt') loadNtt(); }
+  else if ((el=t.closest('[data-nsvc]'))){ ntt.svc=el.dataset.nsvc; ntt.cap=100; render(); }
+  else if ((el=t.closest('[data-nsvcgo]'))){ ntt.svc=el.dataset.nsvcgo; ntt.view='run'; ntt.run=null; ntt.cap=100; render(); scrollTo(0,0); }
+  else if ((el=t.closest('[data-nrun]'))){ ntt.run=+el.dataset.nrun; ntt.cap=100; render(); scrollTo(0,0); }
+  else if ((el=t.closest('[data-nview]'))){ ntt.view=el.dataset.nview; render(); }
+  else if (t.closest('[data-nback]')){ ntt.run=null; ntt.cap=100; render(); }
+  else if (t.closest('[data-nmore]')){ ntt.cap+=100; render(); }
+  else if ((el=t.closest('[data-nexp]'))) nttExport(el.dataset.nexp);
+  else if (t.closest('[data-nretry]')) loadNtt(true);
   else if ((el=t.closest('[data-open]'))) contactDetail(el.dataset.open);
   else if ((el=t.closest('[data-edit]'))) docForm(el.dataset.edit);
   else if ((el=t.closest('[data-doc]'))) openDoc(el.dataset.doc);
@@ -469,7 +628,7 @@ document.addEventListener('click', e=>{
 $('#addBtn').onclick = ()=> tab==='phone' ? contactForm() : (isAdmin ? docForm() : adminLogin(docForm));
 $('#menuBtn').onclick = menu;
 document.addEventListener('change', e=>{ if (e.target.id==='unitSel'){ unitFilter = e.target.value; render(); } });
-$('#q').addEventListener('input', e=>{ query=arabic(e.target.value); $('#view').innerHTML = tab==='phone'?vPhone():vDocs(); });
+$('#q').addEventListener('input', e=>{ query=arabic(e.target.value); ntt.cap=100; $('#view').innerHTML = ({phone:vPhone,docs:vDocs,ntt:vNtt})[tab]?.() ?? ''; });
 
 /* ---------- เริ่มต้น: ล็อกอินรหัสกลาง แล้วค่อยโหลดข้อมูล ---------- */
 const gate = $('#gate');
@@ -507,6 +666,6 @@ $('#gateForm').addEventListener('submit', async e => {
   });
   render();
 })();
-window.__app = { get contacts(){ return contacts; }, get docs(){ return docs; }, render, restore, setTab: t => { tab = t; render(); }, get isAdmin(){ return isAdmin; } };
+window.__app = { ntt, loadNtt, nttList, get contacts(){ return contacts; }, get docs(){ return docs; }, render, restore, setTab: t => { tab = t; render(); }, get isAdmin(){ return isAdmin; } };
 </script>
 </body></html>
